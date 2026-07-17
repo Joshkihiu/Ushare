@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400&display=swap');
+
+:root {
+  --base: #1a1a1a;
+  --shadow-light: #282828;
+  --shadow-dark: #0c0c0c;
+  --cyan: #0dfcac;
+  --success-green: #39ff9c;
+  --error-red: #ff6b6b;
+  --pending-yellow: #f5c542;
+  --text-main: #ffffff;
+  --text-dim: #767676;
+  --bubble-bg: #232323;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--base);
+  font-family: 'Nunito', sans-serif;
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* NEUMORPHIC CARD */
+.card {
+  border-radius: 30px;
+  padding: 25px;
+  background: var(--base);
+  box-shadow: -5px -5px 12px var(--shadow-light), 5px 5px 12px var(--shadow-dark);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.card-header h3 {
+  color: var(--cyan);
+  font-size: 14px;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.card-header i {
+  font-size: 18px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.card-header i:hover { color: var(--cyan); }
+
+.header-card { padding: 20px 25px; }
+
+.mic-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--shadow-dark);
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.6);
+  transition: 0.3s;
+}
+.dot.listening {
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(13,252,172,0.7);
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+
+/* NUMBER DISPLAY — inset neumorphic well */
+.number-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 24px;
+  text-align: center;
+  padding: 18px;
+  border-radius: 16px;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  margin-bottom: 18px;
+  background: var(--base);
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  text-shadow: 0 0 10px rgba(13,252,172,0.4);
+}
+
+.customer-number {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 22px;
+  color: var(--text-main);
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--base);
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+}
+
+/* INSET INPUT */
+.input-wrapper input {
+  width: 100%;
+  background: var(--base);
+  border: 2px solid transparent;
+  padding: 18px 20px;
+  border-radius: 18px;
+  color: var(--text-main);
+  font-size: 20px;
+  outline: none;
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  font-family: 'Share Tech Mono', monospace;
+  transition: 0.3s all ease;
+  margin-bottom: 16px;
+}
+.input-wrapper input:focus {
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light), 0 0 15px rgba(13,252,172,0.2);
+}
+.input-wrapper input::placeholder { color: var(--text-dim); }
+
+/* RAISED NEUMORPHIC BUTTONS */
+.btn-neu, .btn-cyan {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: 0.2s all ease;
+  background: var(--base);
+  color: var(--text-main);
+  box-shadow: -5px -5px 12px var(--shadow-light), 5px 5px 12px var(--shadow-dark);
+}
+.btn-neu:active, .btn-cyan:not(:disabled):active {
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+}
+.btn-neu.active {
+  color: var(--cyan);
+  box-shadow: -5px -5px 12px var(--shadow-light), 5px 5px 12px var(--shadow-dark), 0 0 14px rgba(13,252,172,0.25);
+}
+.btn-cyan {
+  color: var(--cyan);
+  font-weight: 800;
+}
+.btn-cyan:disabled {
+  color: var(--text-dim);
+  cursor: not-allowed;
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+}
+.btn-cyan:not(:disabled):hover {
+  box-shadow: -5px -5px 14px var(--shadow-light), 5px 5px 14px var(--shadow-dark), 0 0 16px rgba(13,252,172,0.35);
+}
+
+.status-line {
+  margin-top: 14px;
+  font-size: 13px;
+  min-height: 18px;
+  font-family: 'Fira Code', monospace;
+  color: var(--text-dim);
+}
+.status-line.success { color: var(--success-green); text-shadow: 0 0 8px rgba(57,255,156,0.4); }
+.status-line.error { color: var(--error-red); }
+.status-line.pending { color: var(--pending-yellow); }
+
+/* LOG */
+.log-card { padding-bottom: 18px; }
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.log::-webkit-scrollbar { width: 3px; }
+.log::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 10px; }
+
+.log div {
+  background: var(--bubble-bg);
+  border-radius: 12px 12px 12px 4px;
+  padding: 8px 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-left: 2px solid var(--cyan);
+}

@@ -55,8 +55,19 @@ import kotlinx.coroutines.launch
 @Composable
 fun App() {
     UShareTheme {
-        var profiles by remember { mutableStateOf(defaultProfiles()) }
-        var nextId by remember { mutableIntStateOf(6) }
+        // Load saved data on first composition
+        val savedProfiles = remember {
+            val raw = loadUserData(SavedKeys.PROFILES)
+            if (raw != null) deserializeProfiles(raw) else null
+        }
+        val savedName = remember { loadUserData(SavedKeys.USER_NAME) }
+        val savedNextId = remember {
+            val raw = loadUserData(SavedKeys.NEXT_ID)
+            if (raw != null) raw.toIntOrNull() else null
+        }
+
+        var profiles by remember { mutableStateOf(savedProfiles ?: defaultProfiles()) }
+        var nextId by remember { mutableIntStateOf(savedNextId ?: 6) }
         var activeId by remember { mutableIntStateOf(profiles.first().id) }
         var activeTab by remember { mutableStateOf(AppTab.HOME) }
         var receivedEntries by remember { mutableStateOf(listOf<ReceivedEntry>()) }
@@ -65,7 +76,7 @@ fun App() {
         var sendState by remember { mutableStateOf(SendState.IDLE) }
         var soundEnabled by remember { mutableStateOf(true) }
         var volume by remember { mutableFloatStateOf(1.0f) }
-        var userName by remember { mutableStateOf("User_992") }
+        var userName by remember { mutableStateOf(savedName ?: "User_992") }
         var profilePhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
 
         val pickPhoto = rememberImagePickerLauncher { bytes ->
@@ -92,6 +103,13 @@ fun App() {
         // Sync volume to SignalGenerator whenever it changes
         LaunchedEffect(volume) {
             SignalGenerator.volume = volume
+        }
+
+        // Auto-save data whenever profiles, userName, or nextId changes
+        LaunchedEffect(profiles, userName, nextId) {
+            saveUserData(SavedKeys.PROFILES, serializeProfiles(profiles))
+            saveUserData(SavedKeys.USER_NAME, userName)
+            saveUserData(SavedKeys.NEXT_ID, nextId.toString())
         }
 
         val onIncomingConfirmed by rememberUpdatedState<(String) -> Unit> { number ->
@@ -183,6 +201,15 @@ fun App() {
                             manualInput = manualInput,
                             receivedEntries = receivedEntries,
                             onManualInputChange = { manualInput = it },
+                            onNumberEdit = {
+                                val p = profiles.firstOrNull { it.id == activeId }
+                                if (p != null) {
+                                    editingId = p.id
+                                    modalNumber = p.number
+                                    modalType = p.type
+                                    showProfileModal = true
+                                }
+                            },
                             onManualSend = {
                                 val value = manualInput.trim()
                                 if (value.isNotEmpty()) {
@@ -449,7 +476,8 @@ private fun HomeScreen(
     onManualSend: () -> Unit,
     onClearLog: () -> Unit,
     onProfileSelected: (Int) -> Unit,
-    onAddProfile: () -> Unit
+    onAddProfile: () -> Unit,
+    onNumberEdit: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -461,7 +489,8 @@ private fun HomeScreen(
             typeLabel = activeProfile.type.label,
             displayNumber = activeProfile.number,
             onAddClick = onAddProfile,
-            onProfileSelected = onProfileSelected
+            onProfileSelected = onProfileSelected,
+            onNumberEdit = onNumberEdit
         )
 
         ManualInputField(

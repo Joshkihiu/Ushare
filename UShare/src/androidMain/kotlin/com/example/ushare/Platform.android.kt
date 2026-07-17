@@ -25,6 +25,16 @@ actual fun copyToClipboardPlatform(text: String) {
 actual fun currentTimeShort(): String =
     SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
 
+actual fun saveUserData(key: String, value: String) {
+    val prefs = appContext.getSharedPreferences("ushare_data", Context.MODE_PRIVATE)
+    prefs.edit().putString(key, value).apply()
+}
+
+actual fun loadUserData(key: String): String? {
+    val prefs = appContext.getSharedPreferences("ushare_data", Context.MODE_PRIVATE)
+    return prefs.getString(key, null)
+}
+
 actual fun decodeByteArrayToImageBitmap(bytes: ByteArray): ImageBitmap? {
     return try {
         android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()

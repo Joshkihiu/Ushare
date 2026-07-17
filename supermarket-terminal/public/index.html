@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supermarket Terminal</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <div class="card header-card">
+      <div class="card-header">
+        <h3>Till Terminal</h3>
+        <div class="mic-status">
+          <span class="dot" id="micDot"></span>
+          <span id="micStatusText">Mic off</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Listening For Number</h3>
+        <i class="fa-solid fa-satellite-dish" id="listenIcon"></i>
+      </div>
+      <div class="number-display" id="numberDisplay">— — — — — — — — —</div>
+      <button id="micToggleBtn" class="btn-neu">Start Listening</button>
+    </div>
+
+    <div class="card" id="amountCard">
+      <div class="card-header">
+        <h3>Customer</h3>
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <div class="customer-number" id="customerNumber">Not yet received</div>
+
+      <div class="input-wrapper">
+        <input type="number" id="amountInput" inputmode="decimal" placeholder="Amount (KES)" min="1" />
+      </div>
+
+      <button id="sendPromptBtn" class="btn-cyan" disabled>Send Payment Prompt</button>
+
+      <div class="status-line" id="statusLine"></div>
+    </div>
+
+    <div class="card log-card">
+      <div class="card-header">
+        <h3>Activity</h3>
+        <i class="fa-regular fa-trash-can" id="clearLogBtn"></i>
+      </div>
+      <div id="log" class="log"></div>
+    </div>
+
+  </div>
+
+  <script src="ultrasonic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

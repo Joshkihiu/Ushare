@@ -127,7 +127,8 @@ fun HomeCard(
     typeLabel: String,
     displayNumber: String,
     onAddClick: () -> Unit,
-    onProfileSelected: (Int) -> Unit
+    onProfileSelected: (Int) -> Unit,
+    onNumberEdit: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -202,7 +203,8 @@ fun HomeCard(
                         offset = androidx.compose.ui.geometry.Offset(-1f, -1f),
                         blurRadius = 2f
                     )
-                )
+                ),
+                modifier = Modifier.clickable(onClick = onNumberEdit)
             )
         }
 
