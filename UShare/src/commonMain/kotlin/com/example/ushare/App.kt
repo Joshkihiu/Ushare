@@ -338,10 +338,15 @@ fun App() {
                             } else profile
                         }
                     } else {
-                        val newProfile = Profile(nextId, number, modalType)
+                        // If the only profile is the test placeholder, replace it
+                        if (profiles.size == 1 && profiles.first().number == "07XXXXXXXX") {
+                            profiles = listOf(Profile(nextId, number, modalType))
+                        } else {
+                            val newProfile = Profile(nextId, number, modalType)
+                            profiles = profiles + newProfile
+                        }
                         nextId++
-                        profiles = profiles + newProfile
-                        activeId = newProfile.id
+                        activeId = profiles.last().id
                     }
                     showProfileModal = false
                     editingId = null

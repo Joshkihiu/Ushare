@@ -37,9 +37,5 @@ enum class SendState { IDLE, HOLD_PENDING, TAP_WAVE, PROCESSING, SUCCESS }
 enum class ModalType { NONE, ADD_EDIT_PROFILE, SETTINGS, PRIVACY, DELETE_CONFIRM }
 
 fun defaultProfiles(): List<Profile> = listOf(
-    Profile(1, "0114113788", ProfileType.SEND_MONEY),
-    Profile(2, "0720455948", ProfileType.SEND_MONEY),
-    Profile(3, "256684", ProfileType.TILL),
-    Profile(4, "883902", ProfileType.PAYBILL),
-    Profile(5, "0720683952", ProfileType.POCHI)
+    Profile(1, "07XXXXXXXX", ProfileType.SEND_MONEY)
 )
