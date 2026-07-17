@@ -106,7 +106,7 @@ cd Ushare/UShare
 adb install androidApp/build/outputs/apk/debug/androidApp-debug.apk
 ```
 
-A pre-built signed APK (`UShare_signed.apk`) is also included in the repo root.
+[📥 **Download the latest APK**](https://github.com/Joshkihiu/Ushare/raw/main/UShare_signed.apk) — install directly on any Android device.
 
 ---
 
