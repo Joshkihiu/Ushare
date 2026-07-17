@@ -13,6 +13,10 @@ expect fun saveUserData(key: String, value: String)
 
 expect fun loadUserData(key: String): String?
 
+expect fun encodeBase64(bytes: ByteArray): String
+
+expect fun decodeBase64(str: String): ByteArray?
+
 @Composable
 expect fun rememberImagePickerLauncher(onImagePicked: (ByteArray?) -> Unit): () -> Unit
 
@@ -21,6 +25,7 @@ object SavedKeys {
     const val PROFILES = "profiles"
     const val USER_NAME = "user_name"
     const val NEXT_ID = "next_id"
+    const val PHOTO = "profile_photo"
 }
 
 /** Serialize profiles to a simple line-based format */

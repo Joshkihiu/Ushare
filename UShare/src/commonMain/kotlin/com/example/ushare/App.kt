@@ -77,7 +77,8 @@ fun App() {
         var soundEnabled by remember { mutableStateOf(true) }
         var volume by remember { mutableFloatStateOf(1.0f) }
         var userName by remember { mutableStateOf(savedName ?: "User_992") }
-        var profilePhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
+        val savedPhoto = remember { loadUserData(SavedKeys.PHOTO)?.let { decodeBase64(it) } }
+        var profilePhotoBytes by remember { mutableStateOf(savedPhoto) }
 
         val pickPhoto = rememberImagePickerLauncher { bytes ->
             profilePhotoBytes = bytes
@@ -105,11 +106,16 @@ fun App() {
             SignalGenerator.volume = volume
         }
 
-        // Auto-save data whenever profiles, userName, or nextId changes
-        LaunchedEffect(profiles, userName, nextId) {
+        // Auto-save data whenever profiles, userName, nextId, or photo changes
+        LaunchedEffect(profiles, userName, nextId, profilePhotoBytes) {
             saveUserData(SavedKeys.PROFILES, serializeProfiles(profiles))
             saveUserData(SavedKeys.USER_NAME, userName)
             saveUserData(SavedKeys.NEXT_ID, nextId.toString())
+            if (profilePhotoBytes != null) {
+                saveUserData(SavedKeys.PHOTO, encodeBase64(profilePhotoBytes!!))
+            } else {
+                saveUserData(SavedKeys.PHOTO, "")
+            }
         }
 
         val onIncomingConfirmed by rememberUpdatedState<(String) -> Unit> { number ->

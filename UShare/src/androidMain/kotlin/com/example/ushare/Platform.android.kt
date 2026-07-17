@@ -35,6 +35,13 @@ actual fun loadUserData(key: String): String? {
     return prefs.getString(key, null)
 }
 
+actual fun encodeBase64(bytes: ByteArray): String =
+    java.util.Base64.getEncoder().encodeToString(bytes)
+
+actual fun decodeBase64(str: String): ByteArray? = try {
+    java.util.Base64.getDecoder().decode(str)
+} catch (e: Exception) { null }
+
 actual fun decodeByteArrayToImageBitmap(bytes: ByteArray): ImageBitmap? {
     return try {
         android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()

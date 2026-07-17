@@ -39,6 +39,19 @@ let running = false;
 let confirmedNumber = null;
 
 async function ensureAudio() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    const isSecure = window.isSecureContext;
+    const host = window.location.hostname;
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+    if (!isSecure && !isLocalhost) {
+      throw new Error(
+        `Mic access is blocked: this page is open at "${window.location.origin}", which the browser ` +
+        `treats as insecure. Open it as http://localhost:4000 on this machine, or serve it over HTTPS ` +
+        `(see README) if you need to reach it from another device on the network.`
+      );
+    }
+    throw new Error('This browser does not support microphone access (navigator.mediaDevices is unavailable).');
+  }
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
   }

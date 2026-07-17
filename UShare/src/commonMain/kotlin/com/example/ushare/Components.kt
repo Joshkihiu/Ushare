@@ -44,6 +44,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -870,6 +872,15 @@ fun ProfileModal(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    // Auto-select all text when modal opens for editing
+    val textFieldValue = remember(visible, number) {
+        if (isEditing && visible) {
+            TextFieldValue(text = number, selection = TextRange(0, number.length))
+        } else {
+            TextFieldValue(text = number)
+        }
+    }
+
     ModalOverlay(visible = visible, onDismiss = onDismiss) {
         Column(
             modifier = Modifier
@@ -886,8 +897,8 @@ fun ProfileModal(
             )
             Spacer(Modifier.height(20.dp))
             TextField(
-                value = number,
-                onValueChange = onNumberChange,
+                value = textFieldValue,
+                onValueChange = { onNumberChange(it.text) },
                 placeholder = { Text("Number", color = UShareColors.TextDim) },
                 textStyle = TextStyle(
                     color = UShareColors.TextMain,
