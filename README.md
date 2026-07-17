@@ -106,7 +106,7 @@ cd Ushare/UShare
 adb install androidApp/build/outputs/apk/debug/androidApp-debug.apk
 ```
 
-[📥 **Download the latest APK**](https://github.com/Joshkihiu/Ushare/raw/main/UShare_signed.apk) — install directly on any Android device.
+[📥 **Download the latest APK**](https://github.com/Joshkihiu/Ushare/raw/main/Ushare.apk) — install directly on any Android device.
 
 ---
 
