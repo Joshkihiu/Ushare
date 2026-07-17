@@ -6,7 +6,7 @@
 
 ## How It Works
 
-### 🧬 Ultrasonic Protocol
+###  Ultrasonic Protocol
 
 UShare encodes data as a sequence of simultaneous **dual-tone pairs** in the 15–19 kHz range (barely audible to most humans, if at all). Each character is mapped to a unique frequency pair from an 8×8 grid:
 
@@ -17,7 +17,7 @@ UShare encodes data as a sequence of simultaneous **dual-tone pairs** in the 15�
 
 A **phase-shift offset** (+300 Hz) is applied every other character to prevent repetition blurring, and a **Hanning window** smooths each tone to eliminate clicks.
 
-### 🔄 Two-Way Verification
+###  Two-Way Verification
 
 Every transmission follows a **3-step handshake** to ensure the data arrived correctly:
 
@@ -27,7 +27,7 @@ Every transmission follows a **3-step handshake** to ensure the data arrived cor
 
 If the echo doesn't arrive or doesn't match, Device A automatically retransmits.
 
-### 📱 Key Features
+###  Key Features
 
 | Feature | Description |
 |---------|-------------|
@@ -39,7 +39,7 @@ If the echo doesn't arrive or doesn't match, Device A automatically retransmits.
 | **Settings** | Toggle sending sound, adjust ultrasonic volume, edit your profile name and photo |
 | **No permissions needed** (beyond microphone) | Works entirely offline |
 
-### 🎨 UI
+###  UI
 
 Dark neumorphic interface with:
 - Soft-UI extruded shadows (`neumorphicRaised` / `neumorphicInset`)
