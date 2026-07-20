@@ -872,12 +872,25 @@ fun ProfileModal(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
-    // Auto-select all text when modal opens for editing
-    val textFieldValue = remember(visible, number) {
-        if (isEditing && visible) {
-            TextFieldValue(text = number, selection = TextRange(0, number.length))
-        } else {
-            TextFieldValue(text = number)
+    // Local TextFieldValue state — only syncs from parent when modal opens,
+    // NOT on every keystroke. This preserves cursor position and avoids the
+    // "typing backwards" / "auto-replaces" bug caused by remember(visible, number).
+    var textFieldValue by remember(visible) {
+        mutableStateOf(
+            if (isEditing && visible) {
+                TextFieldValue(text = number, selection = TextRange(0, number.length))
+            } else {
+                TextFieldValue(text = number)
+            }
+        )
+    }
+    LaunchedEffect(visible) {
+        if (visible) {
+            textFieldValue = if (isEditing) {
+                TextFieldValue(text = number, selection = TextRange(0, number.length))
+            } else {
+                TextFieldValue(text = number)
+            }
         }
     }
 
@@ -898,7 +911,10 @@ fun ProfileModal(
             Spacer(Modifier.height(20.dp))
             TextField(
                 value = textFieldValue,
-                onValueChange = { onNumberChange(it.text) },
+                onValueChange = {
+                    textFieldValue = it
+                    onNumberChange(it.text)
+                },
                 placeholder = { Text("Number", color = UShareColors.TextDim) },
                 textStyle = TextStyle(
                     color = UShareColors.TextMain,
