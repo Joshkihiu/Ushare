@@ -37,7 +37,7 @@
       <div class="customer-number" id="customerNumber">Not yet received</div>
 
       <div class="input-wrapper">
-        <input type="number" id="amountInput" inputmode="decimal" placeholder="Amount (KES)" min="1" />
+        <input type="text" id="amountInput" inputmode="numeric" pattern="[0-9]*" placeholder="Amount (KES)" autocomplete="off" />
       </div>
 
       <button id="sendPromptBtn" class="btn-cyan" disabled>Send Payment Prompt</button>
@@ -55,7 +55,6 @@
 
   </div>
 
-  <script src="ultrasonic.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

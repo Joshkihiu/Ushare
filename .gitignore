@@ -22,3 +22,11 @@ venv/
 # Android
 androidApp/build/
 UShare/build/
+
+# Node
+node_modules/
+package-lock.json
+
+# Env
+.env
+.launch-logs/

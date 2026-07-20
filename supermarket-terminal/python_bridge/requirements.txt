@@ -1,0 +1,4 @@
+numpy
+sounddevice
+flask
+flask-cors

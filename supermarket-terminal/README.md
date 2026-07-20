@@ -1,72 +1,111 @@
 # Supermarket Terminal
 
-Cashier web terminal:
-1. Listens via the browser mic for your custom dual-tone ultrasonic protocol (ported directly from your Python `UltraSender`/`UltraReceiver` — same `FREQ_GRID`, phase-shift anti-blur, and 3-round majority-vote scheme, **not** a generic library like ggwave).
-2. Echoes the candidate number back through the speaker for the sender to verify (same handshake as your Python "1) Receive" menu option).
-3. Once the sender's ACK (`#<number>`) is decoded, the number is confirmed and the amount field unlocks.
-4. Cashier types the amount, hits **Send Payment Prompt**.
-5. Backend fires a real Daraja STK Push to the customer's phone.
-6. Terminal polls until the customer approves/declines, then shows the result.
+Three pieces, three languages, each doing the job it's actually good at:
 
-## ⚠️ Important: this DSP code is untested against real audio
+1. **`python_bridge/transceiver_server.py`** — your *unmodified* ultrasonic
+   protocol (FREQ_GRID, UltraSender, UltraReceiver — copied verbatim from
+   your script) wrapped in a tiny Flask API. This is the only thing that
+   touches audio hardware. Runs locally on the till machine.
+2. **`server.js`** (Node/Express) — serves the browser UI and holds your
+   Daraja (M-Pesa) credentials, firing the real STK Push. Never touches audio.
+3. **`public/`** (browser) — just a UI. No audio decoding happens in the
+   browser at all anymore; it calls the Python bridge over HTTP/SSE and the
+   Node backend over HTTP.
 
-I ported `ultrasonic.js` line-by-line from your Python script (same frequency grid, same SNR threshold, same FFT band logic, own from-scratch radix-2 FFT since there's no numpy in the browser). But I have no microphone/speaker in this environment to actually run it against your sender. Realistic things to check on first real test:
+This replaces an earlier attempt at porting your DSP logic to JavaScript —
+that was a real re-implementation risk (untested against real audio). This
+version runs your actual tested Python code instead, so there's no
+compatibility drift from your sender.
 
-- **`SNR_THRESHOLD` (3.2)** may need retuning — laptop/phone mic noise floors above 15kHz vary a lot by device, more than they do on whatever hardware you tested the Python version on.
-- **FFT window size**: Python uses a non-power-of-two block (`44100 * 0.024 ≈ 1058` samples). Browsers need power-of-two FFT sizes for a fast transform, so `ultrasonic.js` rounds to the *nearest* power of two (1024) rather than padding up to 2048, to stay close to your original ~24ms timing. If character blurring shows up, this is the first thing to revisit.
-- **AudioContext sample rate**: it requests `44100` explicitly, but not all browsers honor a requested rate — Safari in particular sometimes ignores it. The code reads `audioCtx.sampleRate` dynamically everywhere rather than hardcoding 44100, so it should stay internally consistent even if the browser silently picks a different rate, but the *actual* transmitted frequencies will drift if that happens.
-- **Echo/feedback**: the receiver mutes its own analysis tap before connecting to the speaker output, so it shouldn't hear its own echo transmission as new input — but worth confirming on real hardware, especially with speaker/mic close together at a till.
+## Why three processes instead of one
 
-Expect one or two rounds of "record real audio → tell me what broke" once you can test it against your phone.
+`sounddevice`/PortAudio (mic + speaker I/O) is Python-only here, and Daraja
+credentials should never sit in browser JS. Splitting them out means:
+- Your protocol code stays exactly as tested — no rewrite risk.
+- Payment secrets never reach the browser.
+- The browser is just a dumb display + button-clicker, easy to restyle
+  without touching either backend.
 
 ## Setup
+
+### 1. Python bridge (protocol/audio)
+
+```bash
+cd python_bridge
+python3 transceiver_server.py
+```
+
+First run auto-creates `~/.ultrasonic_env` and installs `numpy`,
+`sounddevice`, `flask`, `flask-cors` into it — same pattern as your original
+script's venv bootstrap. Leave this running; it listens on
+`http://localhost:5005`.
+
+### 2. Node backend (STK push + serves the UI)
 
 ```bash
 npm install
 cp .env.example .env
-# edit .env with your real Daraja sandbox/production credentials
-```
-
-### Daraja credentials you need (from https://developer.safaricom.co.ke)
-- `CONSUMER_KEY` / `CONSUMER_SECRET` — from your Daraja app
-- `BUSINESS_SHORTCODE` — your Paybill/Till number (sandbox gives you a test one, e.g. `174379`)
-- `PASSKEY` — Lipa Na M-Pesa Online passkey tied to that shortcode
-- `CALLBACK_URL` — **must be public HTTPS**. Daraja cannot reach `localhost`.
-
-### Exposing your callback URL locally
-Daraja needs to call your server back when the customer approves/declines. While developing locally, use ngrok:
-
-```bash
-ngrok http 4000
-```
-
-Copy the `https://xxxx.ngrok-free.app` URL it gives you, then set in `.env`:
-```
-CALLBACK_URL=https://xxxx.ngrok-free.app/api/mpesa/callback
-```
-(Restart the server after changing `.env`.)
-
-## Run
-
-```bash
+# fill in your real Daraja credentials — see below
 npm start
 ```
 
-Open `http://localhost:4000` on the cashier machine (needs mic **and speaker** — use HTTPS or `localhost`, since browsers block mic access on plain HTTP for any other origin).
+Runs on `http://localhost:4000`.
+
+### 3. Open the terminal
+
+Open `http://localhost:4000` in a browser **on the same machine** as the
+Python bridge (it calls `localhost:5005` directly). If the till and the
+Python process end up on different machines, change `TRANSCEIVER_URL` at
+the top of `public/app.js` to point at the Python machine's address, and
+you'll need HTTPS for mic-adjacent contexts — though note the browser no
+longer needs mic access itself now, since Python owns the mic. CORS is
+already open on the Flask side via `flask-cors`.
+
+### Daraja credentials (from https://developer.safaricom.co.ke)
+- `CONSUMER_KEY` / `CONSUMER_SECRET` — from your Daraja app
+- `BUSINESS_SHORTCODE` — your Paybill/Till number (sandbox gives you a test one, e.g. `174379`)
+- `PASSKEY` — Lipa Na M-Pesa Online passkey tied to that shortcode
+- `CALLBACK_URL` — must be public HTTPS (use `ngrok http 4000` for local dev)
 
 ## Flow at the till
 
-1. Cashier clicks **Start Listening**.
-2. Customer's phone transmits its number via your existing Python (or equivalent) sender.
-3. Terminal decodes a candidate, echoes it back through the till's speaker for the sender to verify — matches your Python handshake exactly.
-4. Sender confirms the echo matched and transmits the ACK (`#<number>`); terminal decodes that and shows **Number confirmed**.
-5. Cashier enters the amount, clicks **Send Payment Prompt**.
-6. Customer gets the M-Pesa PIN prompt on their phone.
-7. Terminal polls and shows **Paid!** with the M-Pesa receipt number once confirmed.
+1. Cashier clicks **Start Listening** → browser calls
+   `POST http://localhost:5005/api/start-listen` → Python starts your
+   `UltraReceiver.listen()` loop on a background thread, exactly like
+   `main_menu()` choice `"1"`.
+2. Customer's phone transmits its number.
+3. Python decodes a candidate, echoes it back via `sender.transmit()` — same
+   handshake as your CLI version — and pushes a `candidate` event over SSE.
+4. Once the sender's ACK (`#<number>`) arrives, Python pushes a `confirmed`
+   event; the UI unlocks the amount field.
+5. Cashier enters the amount, clicks **Send Payment Prompt** → this call
+   goes to the *Node* backend (`/api/stkpush`), which fires the Daraja STK
+   Push.
+6. Node polls Safaricom's callback and the UI polls Node until the customer
+   approves/declines.
+
+## What's genuinely new vs. your script
+
+- `UltraReceiver.listen()` gained one addition: a `stop_event` check inside
+  the existing loop, so the web UI's "Stop Listening" button can interrupt
+  it (your original relied on `KeyboardInterrupt`, which a background
+  thread can't receive). No detection/decoding logic changed.
+- A `run_receive_session()` function that's a direct translation of
+  `main_menu()`'s choice `"1"` while-loop, emitting events to a queue
+  instead of `print()`-ing.
+- Flask routes (`/api/start-listen`, `/api/stop-listen`, `/api/status`,
+  `/api/stream`) — pure plumbing, no protocol logic.
+
+Everything else in `transceiver_server.py` between the `ORIGINAL PROTOCOL
+CODE` markers is copy-pasted from your script unchanged.
 
 ## Notes / things to decide next
 
-- **Transaction storage** is in-memory (`Map` in `server.js`) — fine for a single till on one machine, but restarts wipe pending transactions and it won't work if you run multiple terminal instances. Swap for SQLite/Postgres if this needs to scale past one till.
-- **HTTPS in production**: mic access requires a secure context. `localhost` is exempt for dev, but a real deployment needs TLS (put it behind nginx/Caddy or your cloud provider's HTTPS).
-- **Multiple simultaneous tills** transmitting/listening near each other could cross-talk since they're all in the same ultrasonic band — worth testing if you're deploying more than one terminal in the same store.
-
+- **One till at a time**: `run_receive_session` uses a single global
+  `UltraSender`/`UltraReceiver` pair with a lock preventing concurrent
+  sessions. Fine for one cashier station; if you run multiple tills, each
+  needs its own `transceiver_server.py` instance on its own machine/port.
+- **Transaction storage** (Node side) is in-memory — fine for one till,
+  swap for a real DB if this needs to survive restarts or scale.
+- **Production**: put both the Node and Python services behind a process
+  manager (systemd/pm2) so they restart if the till reboots.

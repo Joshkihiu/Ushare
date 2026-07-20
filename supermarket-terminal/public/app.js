@@ -1,8 +1,9 @@
-// app.js — till terminal, driven by your custom ultrasonic protocol
-// (ultrasonic.js). This mirrors the Python menu's "1) Receive" flow:
-// listen -> echo the candidate back for the sender to verify -> keep
-// listening -> once the sender's ACK ("#<number>") arrives, treat the
-// number as confirmed and unlock the amount/STK-push step.
+// app.js — till terminal UI. All ultrasonic decode/transmit logic lives in
+// your unmodified Python script (python_bridge/transceiver_server.py). This
+// file just calls that local service and updates the screen — it does NOT
+// do any audio processing itself.
+
+const TRANSCEIVER_URL = 'http://localhost:5005'; // where transceiver_server.py runs
 
 const micDot = document.getElementById('micDot');
 const micStatusText = document.getElementById('micStatusText');
@@ -31,86 +32,83 @@ function setStatus(text, kind = '') {
   statusLine.className = `status-line ${kind}`;
 }
 
-let audioCtx = null;
-let mediaStream = null;
-let sender = null;
-let receiver = null;
 let running = false;
 let confirmedNumber = null;
+let eventSource = null;
 
-async function ensureAudio() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    const isSecure = window.isSecureContext;
-    const host = window.location.hostname;
-    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
-    if (!isSecure && !isLocalhost) {
-      throw new Error(
-        `Mic access is blocked: this page is open at "${window.location.origin}", which the browser ` +
-        `treats as insecure. Open it as http://localhost:4000 on this machine, or serve it over HTTPS ` +
-        `(see README) if you need to reach it from another device on the network.`
-      );
+function connectStream() {
+  if (eventSource) return;
+  eventSource = new EventSource(`${TRANSCEIVER_URL}/api/stream`);
+
+  eventSource.onmessage = (e) => {
+    let event;
+    try { event = JSON.parse(e.data); } catch { return; }
+
+    switch (event.type) {
+      case 'status':
+        setStatus(event.value, 'pending');
+        log(event.value);
+        break;
+      case 'candidate':
+        numberDisplay.textContent = event.value;
+        log(`Received candidate: "${event.value}"`);
+        break;
+      case 'confirmed':
+        onConfirmed(event.value);
+        break;
+      case 'stopped':
+        if (running) stopListeningUI();
+        break;
+      default:
+        break;
     }
-    throw new Error('This browser does not support microphone access (navigator.mediaDevices is unavailable).');
-  }
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
-  }
-  if (audioCtx.state === 'suspended') await audioCtx.resume();
-  if (!mediaStream) {
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-    });
-  }
-  if (!sender) sender = new ULTRASONIC.UltraSender(audioCtx);
+  };
+
+  eventSource.onerror = () => {
+    // EventSource auto-reconnects; just surface it if the bridge is down.
+    if (running) setStatus('Lost connection to Python bridge — is transceiver_server.py running?', 'error');
+  };
 }
 
 async function startListening() {
   try {
-    await ensureAudio();
+    connectStream();
+    const res = await fetch(`${TRANSCEIVER_URL}/api/start-listen`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to start listening');
+
     running = true;
     micDot.classList.add('listening');
     micStatusText.textContent = 'Listening…';
     micToggleBtn.textContent = 'Stop Listening';
     micToggleBtn.classList.add('active');
     setStatus('Awaiting incoming signal…', 'pending');
-    log('Awaiting incoming signal…');
-    runReceiveLoop();
+    log('Started listening (Python bridge).');
   } catch (err) {
     console.error(err);
-    setStatus(`Mic error: ${err.message}`, 'error');
+    setStatus(
+      `Could not reach Python bridge at ${TRANSCEIVER_URL} — run "python transceiver_server.py" on this machine.`,
+      'error'
+    );
   }
 }
 
-function stopListening() {
+async function stopListening() {
+  try {
+    await fetch(`${TRANSCEIVER_URL}/api/stop-listen`, { method: 'POST' });
+  } catch (err) {
+    console.error(err);
+  }
+  stopListeningUI();
+}
+
+function stopListeningUI() {
   running = false;
-  if (receiver) receiver.stop();
   micDot.classList.remove('listening');
   micStatusText.textContent = 'Mic off';
   micToggleBtn.textContent = 'Start Listening';
   micToggleBtn.classList.remove('active');
   log('Stopped listening.');
-}
-
-async function runReceiveLoop() {
-  while (running) {
-    receiver = new ULTRASONIC.UltraReceiver(audioCtx, mediaStream);
-    const msg = await receiver.listen({});
-    if (!running) return;
-    if (!msg) continue;
-
-    if (msg.startsWith(ULTRASONIC.ACK_PREFIX)) {
-      const number = msg.slice(ULTRASONIC.ACK_PREFIX.length).trim();
-      onConfirmed(number);
-      return;
-    }
-
-    numberDisplay.textContent = msg;
-    log(`Received candidate: "${msg}" — echoing back for verification…`);
-    setStatus('Verifying with sender…', 'pending');
-    await sender.transmit(msg);
-    log(`Echoed "${msg}". Waiting for sender confirmation…`);
-    // loop continues; the next listen() call is waiting for the ACK
-  }
 }
 
 function onConfirmed(number) {
@@ -120,7 +118,11 @@ function onConfirmed(number) {
   sendPromptBtn.disabled = !amountInput.value || Number(amountInput.value) <= 0;
   setStatus('Number confirmed.', 'success');
   log(`CONFIRMED: ${number}`);
-  stopListening();
+  running = false;
+  micDot.classList.remove('listening');
+  micStatusText.textContent = 'Mic off';
+  micToggleBtn.textContent = 'Start Listening';
+  micToggleBtn.classList.remove('active');
 }
 
 micToggleBtn.addEventListener('click', () => {
@@ -129,6 +131,8 @@ micToggleBtn.addEventListener('click', () => {
 });
 
 amountInput.addEventListener('input', () => {
+  // Strip non-digit characters for consistent cross-browser behavior
+  amountInput.value = amountInput.value.replace(/\D/g, '');
   sendPromptBtn.disabled = !confirmedNumber || !amountInput.value || Number(amountInput.value) <= 0;
 });
 

@@ -1,0 +1,37 @@
+# ~/.config/espanso/match/supermarket.yml
+#
+# Triggers on the standalone word "supermarket" typed in ANY application
+# (browser, terminal, text editor, chat app — anywhere espanso is watching
+# keystrokes). Runs launch-supermarket.sh, then retypes "supermarket" as
+# plain text so what you typed still shows up normally on screen.
+#
+# CAVEAT: because this matches the literal word (not a prefix like
+# ":supermarket"), it will also fire if you type "supermarket" while
+# writing an email, a doc, a chat message, code — anywhere. `word: true`
+# below at least requires it to be a whole word (won't fire mid-word, e.g.
+# typing "supermarkets" or "hypersupermarket"), but it's not scoped to any
+# one app. If that turns out to be too trigger-happy in practice, the
+# one-line fix is changing `trigger: "supermarket"` to something like
+# `trigger: ":supermarket"` so it only fires when you deliberately type the
+# colon prefix.
+
+matches:
+  - trigger: "supermarket"
+    word: true
+    propagate_case: false
+    replace: "{{launch}}"
+    vars:
+      - name: launch
+        type: shell
+        params:
+          cmd: "$HOME/Desktop/TheCompany/supermarket-terminal/automation/launch-supermarket.sh > /dev/null 2>&1 &"
+
+  - trigger: "closesupermarket"
+    word: true
+    propagate_case: false
+    replace: "{{stop}}"
+    vars:
+      - name: stop
+        type: shell
+        params:
+          cmd: "$HOME/Desktop/TheCompany/supermarket-terminal/automation/stop-supermarket.sh > /dev/null 2>&1 &"
